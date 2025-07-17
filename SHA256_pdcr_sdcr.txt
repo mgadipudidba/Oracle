@@ -1,0 +1,70 @@
+[oracle@pdcr3adm02vm01 xdb_wallet]$ orapki wallet create -wallet /u02/app/oracle/product/12.2.0/dbhome_6/admin/CMRPTPRD/xdb_wallet -auto_login
+
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl config
+
+orapki wallet add -wallet /u02/app/oracle/product/12.2.0/dbhome_6/admin/CMRPTPRD/xdb_wallet -dn "CN=CMRPTPRD" -self_signed -validity 3650 -keysize 2048 -pwd Password#123 -sign_alg SHA256
+
+chmod 777 ewallet.p12
+chmod 777 cwallet.sso
+
+
+grid@pdcr2adm01vm01 ~]$ crs_stat|grep lsnr
+NAME=ora.ASMNET1LSNR_ASM.lsnr
+NAME=ora.LISTENER.lsnr
+NAME=ora.LISTENER_LEAF.lsnr
+NAME=ora.LISTENER_SCAN1.lsnr
+NAME=ora.LISTENER_SCAN2.lsnr
+NAME=ora.LISTENER_SCAN3.lsnr
+NAME=ora.pdcr2adm01vm01.LISTENER_PDCR2ADM01VM01.lsnr
+NAME=ora.pdcr2adm02vm01.LISTENER_PDCR2ADM02VM01.lsnr
+
+[grid@pdcr2adm01vm01 ~]$ crs_stop ora.pdcr2adm01vm01.LISTENER_PDCR2ADM01VM01.lsnr
+Attempting to stop `ora.LISTENER.lsnr` on member `pdcr2adm01vm01`
+Stop of `ora.LISTENER.lsnr` on member `pdcr2adm01vm01` succeeded.
+
+[grid@pdcr2adm01vm01 ~]$ srvctl config
+CMBRSPRD
+CMRPTPRD
+CROBPRD
+
+[grid@pdcr2adm01vm01 ~]$ srvctl status database -d CMRPTPRD
+Instance CMRPTPRD1 is running on node pdcr2adm01vm01
+Instance CMRPTPRD2 is running on node pdcr2adm02vm01
+
+[grid@pdcr2adm01vm01 ~]$ srvctl stop instance -d CMRPTPRD -i CMRPTPRD1 -force
+[grid@pdcr2adm01vm01 ~]$ srvctl start instance -d CMRPTPRD -i CMRPTPRD1
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[oracle@pdcr3adm02vm01 xdb_wallet]$ orapki wallet create -wallet /u02/app/oracle/product/12.2.0/dbhome_4/admin/CMRPTPRD_2/xdb_wallet -auto_login
+
+orapki wallet add -wallet /u02/app/oracle/product/12.2.0/dbhome_4/admin/CMRPTPRD_2/xdb_wallet -dn "CN=CMRPTPRD_2" -self_signed -validity 3650 -keysize 2048 -pwd Password#123 -sign_alg SHA256
+
+[grid@sdcr1adm01vm01 ~]$ crs_stat|grep lsnr
+NAME=ora.ASMNET1LSNR_ASM.lsnr
+NAME=ora.LISTENER.lsnr
+NAME=ora.LISTENER_LEAF.lsnr
+NAME=ora.LISTENER_SCAN1.lsnr
+NAME=ora.LISTENER_SCAN2.lsnr
+NAME=ora.LISTENER_SCAN3.lsnr
+NAME=ora.sdcr1adm01vm01.LISTENER_SDCR1ADM01VM01.lsnr
+NAME=ora.sdcr1adm02vm01.LISTENER_SDCR1ADM02VM01.lsnr
+
+[grid@sdcr1adm01vm01 ~]$ srvctl config
+CMBRSPRD_2
+CMRPTPRD_2
+CROBPRD_2
+
+[grid@sdcr1adm01vm01 ~]$ srvctl status database -d CMRPTPRD_2
+Instance CMRPTPRD_21 is running on node sdcr1adm01vm01
+Instance CMRPTPRD_22 is running on node sdcr1adm02vm01
+
+[grid@sdcr1adm01vm01 ~]$ crs_stop ora.sdcr1adm01vm01.LISTENER_SDCR1ADM01VM01.lsnr
+Attempting to stop `ora.LISTENER.lsnr` on member `sdcr1adm01vm01`
+Stop of `ora.LISTENER.lsnr` on member `sdcr1adm01vm01` succeeded.
+
+[grid@sdcr1adm01vm01 ~]$ srvctl stop instance -d CMRPTPRD_2 -i CMRPTPRD_21 -force
+
+[grid@sdcr1adm01vm01 ~]$ srvctl start instance -d CMRPTPRD_2 -i CMRPTPRD_21
+

@@ -1,0 +1,148 @@
+Key Metrics to Check:
+CPU Usage: High CPU utilization can indicate inefficient queries or resource contention.
+Memory Usage: Insufficient memory or improper memory allocation can cause performance issues.
+Disk I/O: High disk I/O indicates possible bottlenecks in data retrieval or insufficient storage performance.
+Wait Events: These are vital to understanding what resources the database is waiting on, like CPU, memory, or I/O.
+You can monitor these metrics using Oracle's Enterprise Manager (OEM) or other third-party monitoring tools.
+
+2. Analyze Active Sessions
+Use the V$SESSION and V$SESSION_WAIT views to identify active sessions and which resources they are waiting for.
+
+V$SESSION: This view contains information about current user sessions and their status.
+V$SESSION_WAIT: This view gives details on what each session is waiting for (e.g., I/O, lock contention, or CPU).
+SELECT s.sid, s.serial#, s.username, s.program, w.event, w.wait_time, w.seconds_in_wait
+FROM v$session s, v$session_wait w
+WHERE s.sid = w.sid
+AND s.username IS NOT NULL;
+
+3. Identify Long-Running Queries
+Long-running queries are a common cause of performance degradation. Use the V$SQL or V$SQLAREA views to identify these queries.
+
+SELECT sql_id, elapsed_time/1000000 elapsed_secs, executions, sql_text
+FROM v$sql
+WHERE elapsed_time > 1000000  -- Adjust the time threshold (in microseconds)
+ORDER BY elapsed_time DESC;
+This query retrieves SQL queries that have been running for a long time (you can adjust the time threshold as per your need).
+
+4. Check Database Wait Events
+Oracle provides detailed information about what resources a session is waiting on through wait events. Common wait events include:
+
+db file sequential read (disk I/O wait)
+log file sync (waiting on redo log writes)
+buffer busy waits (contention for buffer cache)
+You can check wait events using the V$SYSTEM_EVENT and V$SESSION_EVENT views.
+
+SELECT event, total_waits, time_waited
+FROM v$system_event
+WHERE total_waits > 0
+ORDER BY time_waited DESC;
+
+5. Check Database Logs
+Review Oracle logs for errors or warnings. This includes:
+
+Alert log: Located in the Oracle $ORACLE_BASE/diag directory, the alert log provides critical information about database startup, shutdown, and errors.
+Listener log: Review this log for network-related issues that could impact database connections.
+SQL Example to check for errors:
+SELECT * FROM v$diag_info;
+
+6. Analyze Execution Plans
+Sometimes the query execution plans are inefficient, leading to slow performance. Use EXPLAIN PLAN or AUTOTRACE to analyze the execution plan of problematic queries.
+
+SQL Example to display the execution plan:
+EXPLAIN PLAN FOR
+SELECT * FROM employees WHERE employee_id = 100;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+Look for operations like full table scans or nested loops that could indicate inefficiency, especially if indexes are not being used properly.
+
+7. Review Index Usage
+Inefficient or missing indexes can significantly degrade performance. Check if indexes are being used properly by queries.
+
+SELECT * 
+FROM dba_indexes
+WHERE status = 'UNUSED';
+Also, you can examine which queries are not using indexes optimally by checking their execution plans.
+
+8. Use Oracle AWR (Automatic Workload Repository) Reports
+If you have Oracle's AWR enabled, you can generate reports that summarize the database's performance over a specific time period. These reports show:
+
+Wait events
+Top SQL queries by resource consumption
+System metrics (CPU, I/O, memory usage)
+AWR Report Example:
+@?/rdbms/admin/awrrpt.sql
+9. Check for Lock Contention
+If sessions are waiting for locks, it can cause slow performance. Use the V$LOCK and V$SESSION views to check for lock contention.
+
+SQL Example to identify lock contention:
+SELECT l.session_id, l.type, l.id1, l.id2, s.username, s.program
+FROM v$lock l, v$session s
+WHERE l.session_id = s.sid
+AND l.block = 1;
+This will help identify sessions that are blocking others and causing contention.
+
+10. Database Configuration Check
+Improper database configuration can lead to performance issues. Some common areas to check include:
+
+Memory settings: Ensure that SGA and PGA sizes are optimized.
+Optimizer settings: Ensure that Oracle’s cost-based optimizer (CBO) is using appropriate statistics.
+Parallel query settings: Ensure that parallelism is configured optimally for large data operations.
+You can check the configuration parameters using the following:
+
+SHOW PARAMETER;
+11. Disk and I/O Performance
+If the system is experiencing high disk I/O, the database can slow down. You can use tools like iostat or v$filestat to monitor disk performance.
+
+SQL Example to check file I/O:
+SELECT file_id, physical_reads, physical_writes
+FROM v$filestat;
+12. Review the Database’s System-Level Resources
+Sometimes, slow performance can be attributed to insufficient system-level resources (e.g., CPU, memory). Use operating system tools like top, vmstat, or sar to check system resource usage.
+
+
+High level steps for System level performance issues
+
+Use vmstat top/prstat to identify system wide CPU/Memory consumption.
+Use iostat to verify if disks are the bottleneck
+Use netstat/tnsping etc to verify if network is issue.
+Verify if any other resource intensive processes are running on server.
+Verify filesystem space.
+Check alert logs, application logs, traces etc.
+Check database locks
+Generate AWR reports to see what is eating up resources.
+Check if increasing application/database memory/redo/undo/temp/SGA will help.
+ 
+
+High level steps for Session level performance issues
+
+Find the Top SQLs executing under session.
+Apply SQL optimization techniques on top SQLs.
+Verify locking at session level
+Generating AWR/ASH for that duration may help in providing useful information.
+ 
+
+High level steps for SQL level performance issues
+
+Apply trace, Generate TKPROF file and analyze for top resource consuming SQL.
+Enable SQL Trace for a Specific Session
+ALTER SESSION SET SQL_TRACE = TRUE;
+set a trace file location:
+ALTER SESSION SET USER_DUMP_DEST = '/path/to/trace_directory';
+After enabling SQL tracing, execute the SQL statements or stored procedures that you want to analyze. The SQL trace file will capture all SQL queries and their associated statistics (e.g., execution time, wait events, etc.).
+ Locate the Trace File(SHOW PARAMETER user_dump_dest;)
+ Generate the TKPROF File from the Trace File(tkprof /path/to/tracefile.trc /path/to/outputfile.prf)
+Analyzing the TKPROF Output( SQL Statement: The actual SQL query or PL/SQL block that was executed.
+Execution Statistics: This includes details like execution time, buffer gets, disk reads, rows processed, and the number of executions.
+Wait Events: Information on any database waits or bottlenecks.
+EXPLAIN Plan: If you used the EXPLAIN option, it will show the execution plan for the SQL statements.)
+
+Avoid full table scans on large tables
+Possible indexes on columns contained in the WHERE clause
+Use AWR/ASH reports to get collective information
+Also use SQLTRPT/SQLT
+Verify is statistics are current
+Verify if indexes are valid and are adequate.
+Verify is parallelism/materialized views/Baselines/SQL Profiles will help
+Monitor V$SESSION_LONGOPS to detect long running operations
+Decide on using Hints if those are helping.
+Table partitioning can be thought of as an option based on kind and size of tables.

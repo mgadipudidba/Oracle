@@ -1,0 +1,44 @@
+#!/bin/bash
+
+export ORACLE_HOME=/opt/app/oracle/product/19.0.0/db_1
+export ORACLE_SID=MIBS
+export PATH=/opt/app/oracle/product/19.0.0/db_1/bin:/opt/app/oracle/product/19.0.0/db_1/OPatch:/usr/sbin:/usr/local/bin:/home/oracle/.local/bin:/home/oracle/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+#sqlplus sys/oracle123@MIBS log=/DumpExport/RMAN_BACKUPS/Incremental_Backups/$(date '+%y%m%d-%H%M%S').log << EOF
+
+# Oracle database connection details
+DB_USER="sys"
+DB_PASSWORD="oracle123"
+DB_SID="MIBS"
+
+# Output directory
+OUTPUT_DIR="/DumpExport/"
+
+# Create output directory if it doesn't exist
+mkdir -p $OUTPUT_DIR
+
+# SQL commands
+SQL_COMMANDS=(
+'delete FROM WEBBDS.USERACTIVITY WHERE SYSTIMESTAMP < (SYSDATE - 60);'
+delete FROM WEBBDS.USERACTIVITY WHERE "SYSTIMESTAMP" < TO_DATE('2024-03-01', 'YYYY-MM-DD');
+'alter table WEBBDS.USERACTIVITY enable row movement;'
+'alter table WEBBDS.USERACTIVITY shrink SPACE cascade;'
+'ALTER TABLE WEBBDS.USERACTIVITY MODIFY LOB(SCREENHTML) (SHRINK SPACE CASCADE);'
+'alter table WEBBDS.USERACTIVITY disable row movement;'
+)
+
+# Loop through each SQL command and execute it, saving output to a file
+for ((i=0; i<${#SQL_COMMANDS[@]}; i++))
+do
+  SQL_COMMAND="${SQL_COMMANDS[$i]}"
+  OUTPUT_FILE="$OUTPUT_DIR/output_$i.txt"
+
+  echo "Executing: $SQL_COMMAND"
+  echo "Output will be saved to: $OUTPUT_FILE"
+
+  # Execute SQL command and save output to file
+  sqlplus -S $DB_USER/$DB_PASSWORD@$DB_SID <<EOF > "$OUTPUT_FILE"
+  $SQL_COMMAND
+  exit;
+EOF
+done

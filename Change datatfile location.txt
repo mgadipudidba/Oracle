@@ -1,0 +1,102 @@
+Moving Datafiles : 
+
+SQL> select tablespace_name, file_name from dba_data_files;
+
+Moving Normal Data Files :
+
+SQL> alter tablespace USERS offline;
+
+Tablespace altered.
+
+SQL>
+!
+$ mv /u02/oradata/TEST/users01.dbf /u03/oradata/TEST/
+$ exit
+
+exit
+
+SQL>alter tablespace USERS rename datafile '/u02/oradata/TEST/users01.dbf' to '/u03/oradata/TEST/users01.dbf';
+
+Tablespace altered.
+
+SQL>
+
+alter tablespace USERS online;
+
+Tablespace altered.
+
+Moving System, Temporary or Rollback Tablespaces :
+
+SQL> shutdown immediate;
+
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL>startup mount;
+
+ORACLE instance started.
+...
+
+SQL>
+ !
+$ mv /u02/oradata/TEST/system01.dbf /u03/oradata/TEST/
+$ exit
+SQL>alter database rename file '/u02/oradata/TEST/system01.dbf' to
+'/u03/oradata/TEST/system01.dbf';
+
+Database altered.
+
+SQL>alter
+ database open;
+
+Database altered.
+
+select 'SET NEWNAME FRO DATAFILE '|| file# || ' TO ' || '''' || name || ';' from v$datafile;
+
+Moving Redo Logs :
+
+SQL>
+shutdown
+ immediate;
+
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL>
+ !
+$ mv /u02/oradata/TEST/redo*.log /u03/oradata/TEST
+$ exit
+exit
+SQL>
+startup
+ mount;
+
+ORACLE instance started.
+...
+
+SQL>
+alter
+ database rename file '/u02/oradata/TEST/redo01.log' to
+'/u03/oradata/TEST/redo01.log';
+
+Database altered.
+
+SQL>
+alter
+ database rename file '/u02/oradata/TEST/redo02.log' to '/u03/oradata/TEST/redo02.log';
+
+Database altered.
+
+SQL>
+alter
+ database rename file '/u02/oradata/TEST/redo03.log' to '/u03/oradata/TEST/redo03.log';
+
+Database altered.
+
+SQL>
+alter
+ database open;
+
+Database altered.

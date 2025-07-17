@@ -1,0 +1,40 @@
+cat rman_arch_del.sh
+
+# $Header: rman_arch_del.sh
+# *====================================================================================+
+# |  Author - Madhu sudhana Rao Gadipudi
+# |                                                       |
+# +====================================================================================+
+# |
+# | FILENAME
+# |     rman_arch_del.sh
+# |
+# | DESCRIPTION
+# |     Delete the archive log older then 7 days
+# | PLATFORM
+# |     Linux/Solaris
+# +===========================================================================+
+
+#!/bin/bash
+#export ORACLE_HOME=/opt/app/oracle/product/19.0.0/db_1
+#export ORACLE_SID=MIBS
+#export PATH=opt/app/oracle/product/19.0.0/db_1/bin:/opt/app/oracle/product/19.0.0/db_1/OPatch:/usr/sbin:/usr/local/bin:/home/oracle/.local/bin:/home/oracle/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+#$ORACLE_HOME/bin/rman << EOF
+rman target sys/oracle123@MIBS << EOF
+#rman raget /
+run { 
+allocate channel d1 type disk; 
+delete force noprompt archivelog all completed before 'SYSDATE-7'; 
+release channel d1; 
+} 
+
+#exit
+EOF
+
+
+
+
+Now configure in crontab:
+
+00 22 * * * /u01/app/oracle/rman_arch_del.sh > /tmp/rmanarch.log

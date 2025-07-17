@@ -1,0 +1,79 @@
+>> cat rman-bkp-weekly.sh
+run {
+allocate channel d1 type disk;
+BACKUP FORMAT 'E:\backup\rman\bkp\%d_DB_%T_%u_s%s_p%p.rman' DATABASE
+  CURRENT CONTROLFILE FORMAT 'E:\backup\rman\bkp\%d_CF_%T_%u.rman'
+  SPFILE FORMAT 'E:\backup\rman\bkp\%d_SP_%T_%u.rman'
+  PLUS ARCHIVELOG FORMAT 'E:\backup\rman\bkp\%d_AR_%T_%u_s%s_p%p.rman' delete input;
+release channel d1;
+}[pdcr2adm01vm01.my1.ocm.s1752203.oraclecloudatcustomer.com][/tmp]
+>>
+
+===========================================================================
+
+rman backup weekly.sh           (It is in old Prod)
+
+run {
+allocate channel d1 type disk;
+BACKUP FORMAT '/u02/rman/%d_DB_%T_%u_s%s_p%p.rman' DATABASE
+  CURRENT CONTROLFILE FORMAT '/u02/rman/%d_CF_%T_%u.rman'
+  SPFILE FORMAT '/u02/rman/%d_SP_%T_%u.rman'
+  PLUS ARCHIVELOG FORMAT '/u02/rman/%d_AR_%T_%u_s%s_p%p.rman' delete input;
+release channel d1;
+}
+
+
+=====================================================================================================================
+
+rman target / nocatalog cmdfile=E:\backup\rman\bin\rman-bkp-weekly.sh log=E:\backup\rman\bin\backup_complete_db1_%date:~4,2%_%date:~7,2%_%date:~10%.log
+
+
+====================================================================================================================
+run {
+allocate channel d1 type disk;
+BACKUP FORMAT '/u02/rman/%d_DB_%T_%u_s%s_p%p.rman' DATABASE
+  CURRENT CONTROLFILE FORMAT '/u02/rman/%d_CF_%T_%u.rman'
+  SPFILE FORMAT '/u02/rman/%d_SP_%T_%u.rman'
+  PLUS ARCHIVELOG FORMAT '/u02/rman/%d_AR_%T_%u_s%s_p%p.rman';
+  release channel d1;
+}
+
+
+PLUS ARCHIVELOG FORMAT 'E:\backup\rman\bkp\%d_AR_%T_%u_s%s_p%p.rman' delete input;
+
+====================================================================================================================
+
+delete noprompt archivelog until time 'SYSDATE-7';
+
+DELETE ARCHIVELOG ALL COMPLETED BEFORE 'sysdate-7';
+
+DELETE BACKUP OF archivelog UNTIL TIME 'sysdate-7';
+
+delete force noprompt archivelog until time 'SYSDATE-7';
+
+DELETE ARCHIVELOG ALL COMPLETED BEFORE ‘sysdate-1’;
+======================================================================================================================
+
+vi backup_incr.cmd		 
+		 
+date >> backup.log
+echo "Start Backup" >> backup.log
+rman target / nocatalog <<!
+run {
+allocate channel t1 type disk format 'E:\backup\Incremental_anand\bckup_HPFORUMS_incr_%U.rmanbk';
+allocate channel t2 type disk format 'E:\backup\Incremental_anand\bckup_HPFORUMS_incr_%U.rmanbk';
+allocate channel t3 type disk format 'E:\backup\Incremental_anand\bckup_HPFORUMS_incr_%U.rmanbk';
+allocate channel t4 type disk format 'E:\backup\Incremental_anand\bckup_HPFORUMS_incr_%U.rmanbk';
+allocate channel t5 type disk format 'E:\backup\Incremental_anand\bckup_HPFORUMS_incr_%U.rmanbk';
+backup incremental from scn 150264459 as compressed backupset database;
+}
+exit;  
+!
+echo "Backup done" >> backup.log
+date >> backup.log
+
+nohup ./backup_incr.cmd &
+
+E:\backup\Incremental_Madhu\
+
+E:\backup\Incremental_Madhu

@@ -1,0 +1,47 @@
+SELECT *
+FROM (SELECT l.owner,
+l.table_name,
+l.column_name,
+l.segment_name,
+l.tablespace_name,
+ROUND(s.bytes/1024/1024,2) mb
+FROM dba_lobs l
+JOIN dba_segments s ON s.owner = l.owner AND s.segment_name = l.segment_name
+ORDER BY 6 DESC) WHERE owner='WEBBDS';
+
+Backup 2 tables :
+
+expdp sc/sc directory=DUMPDIR dumpfile=expdp_EJF_09122023_orginal.dmp logfile=expdp_WEBBDS_EJF_09122023_orginal.log tables=WEBBDS.EJF;  
+expdp sc/sc directory=DUMPDIR dumpfile=expdp_USERACTIVITY_09122023_orginal.dmp logfile=expdp_WEBBDS_USERACTIVITY_09122023_orginal.log tables=WEBBDS.USERACTIVITY ;
+
+perform data purge for the 2 tables:
+
+delete FROM WEBBDS.EJF WHERE REQTIMESTAMP < (SYSDATE - 60);
+alter table WEBBDS.EJF enable row movement;
+alter table WEBBDS.EJF shrink SPACE cascade;
+ALTER TABLE WEBBDS.EJF MODIFY LOB(TOTA) (SHRINK SPACE CASCADE);
+ALTER TABLE WEBBDS.EJF MODIFY LOB(TITA) (SHRINK SPACE CASCADE);
+ALTER TABLE WEBBDS.EJF MODIFY LOB(SCREENIMAGE) (SHRINK SPACE CASCADE);
+ALTER TABLE WEBBDS.EJF MODIFY LOB(PARAMDATA) (SHRINK SPACE CASCADE);
+alter table WEBBDS.EJF disable row movement;
+
+delete FROM WEBBDS.USERACTIVITY WHERE "SYSTIMESTAMP" < (SYSDATE - 60);
+alter table WEBBDS.USERACTIVITY enable row movement;
+alter table WEBBDS.USERACTIVITY shrink SPACE cascade;
+alter table WEBBDS.USERACTIVITY MODIFY LOB(SCREENHTML) (SHRINK SPACE CASCADE);
+alter table WEBBDS.USERACTIVITY disable row movement;
+
+Backup with expdp:
+
+expdp sc/sc directory=DUMPDIR dumpfile=expdp_EJF_09122023.dmp logfile=expdp_WEBBDS_EJF_09122023.log tables=WEBBDS.EJF ;  
+expdp sc/sc directory=DUMPDIR dumpfile=expdp_USERACTIVITY_09122023.dmp logfile=expdp_WEBBDS_USERACTIVITY_09122023.log tables=WEBBDS.USERACTIVITY ;
+
+Drop table:
+
+Drop table WEBBDS.EJF purge;
+Drop table WEBBDS.USERACTIVITY purge;
+
+Restore table with impdp:
+
+impdp sc/sc directory=DUMPDIR dumpfile=expdp_EJF_09122023.dmp logfile=impdp_WEBBDS_EJF_09122023.log tables=WEBBDS.EJF;
+impdp sc/sc directory=DUMPDIR dumpfile=expdp_USERACTIVITY_09122023.dmp logfile=impdp_WEBBDS_USERACTIVITY_09122023.log tables=WEBBDS.USERACTIVITY;

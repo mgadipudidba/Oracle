@@ -1,0 +1,112 @@
+**********Enable archive log mode: ************
+
+SQL > select name,log_mode from v$database;
+
+NAME LOG_MODE
+--------- -----------
+PROD NOARCHIVELOG
+
+SQL > archive log list
+Database log mode No Archive Mode
+Automatic archival Disbled
+Archive destination /uv1249/arch/PROD
+Oldest online log sequence 107506
+Next log sequence to archive 107513
+Current log sequence 107513
+
+---- make sure db is running in spfile
+SQL > alter system set log_archive_dest_1='LOCATION=/uv1249/arch/PROD' scope=spfile;
+database altered.
+
+SQL >shutdown immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL > startup mount
+ORACLE instance started.
+
+Total System Global Area 6415597568 bytes
+Fixed Size 2170304 bytes
+Variable Size 905970240 bytes
+Database Buffers 5502926848 bytes
+Redo Buffers 4530176 bytes
+Database mounted.
+
+SQL >alter database archivelog;
+
+database altered.
+
+SQL >alter database open;
+
+database altered.
+
+SQL >select name,log_mode from v$database;
+
+NAME LOG_MODE
+--------- -----------
+PROD ARCHIVELOG
+
+SQL >archive log list
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /uv1249/arch/PROD
+Oldest online log sequence 107506
+Next log sequence to archive 107513
+Current log sequence 107513
+
+************************* Disable archivelog mode: **************************
+
+
+SQL >select name,log_mode from v$database;
+
+NAME LOG_MODE
+--------- -----------
+PROD ARCHIVELOG
+
+SQL > archive log list
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /uv1249/arch/PROD
+Oldest online log sequence 107506
+Next log sequence to archive 107513
+Current log sequence 107513
+
+
+SQL > shutdown immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL > startup mount
+ORACLE instance started.
+
+Total System Global Area 6415597568 bytes
+Fixed Size 2170304 bytes
+Variable Size 905970240 bytes
+Database Buffers 5502926848 bytes
+Redo Buffers 4530176 bytes
+Database mounted.
+
+SQL >alter database noarchivelog;
+
+database altered.
+
+SQL >alter database open;
+
+database altered.
+
+
+SQL > select name,log_mode from v$database;
+
+NAME LOG_MODE
+--------- -----------
+PROD NOARCHIVELOG
+
+SQL > archive log list
+Database log mode No Archive Mode
+Automatic archival Disbled
+Archive destination /uv1249/arch/PROD
+Oldest online log sequence 107506
+Next log sequence to archive 107513
+Current log sequence 107513

@@ -1,0 +1,78 @@
+The Oracle database is usually packaged in .zip files (e.g., linux.x64_19c_database.zip for Oracle Database 19c).
+Prepare the System
+
+Ensure that your system meets Oracle’s hardware and software prerequisites (e.g., minimum RAM, disk space, operating system version).
+You may need to install certain required packages and dependencies like yum or rpm packages (for Linux-based systems) using the package manager.
+Create Required Oracle Directories and Users
+
+Create Oracle User:
+
+sudo useradd -m oracle
+sudo passwd oracle
+sudo usermod -aG dba oracle
+sudo usermod -aG oinstall oracle
+
+Create Oracle Directories:
+sudo mkdir -p /u01/app/oracle
+sudo chown -R oracle:oinstall /u01
+sudo chmod -R 775 /u01
+
+Adjust paths based on your environment (e.g., /u01 for Oracle installation).
+Set Kernel Parameters
+
+Edit the /etc/sysctl.conf to set appropriate kernel parameters required by Oracle:
+
+sudo vi /etc/sysctl.conf
+
+Add/modify the following:
+fs.file-max=6815744
+kernel.shmmax=4294967296
+kernel.shmall=2097152
+
+Save and reload with:
+sudo sysctl -p
+
+Download and Unzip Oracle Database Files
+
+Upload the downloaded .zip Oracle binary files to the system (e.g., using scp or sftp).
+Unzip the files into a directory, e.g., /home/oracle/database.
+unzip linux.x64_19c_database.zip -d /home/oracle/database
+Run Oracle Installer (cd /u01/app/oracle/product/19.0.0/dbhome_1) 
+
+Switch to the Oracle user:
+sudo su - oracle
+
+Navigate to the directory where you unzipped the Oracle binary:
+cd /home/oracle/database
+
+Start the Oracle Database installer:
+./runInstaller
+The graphical installer will launch. Follow the prompts for:
+Installation Type (e.g., Create and Configure a Database)
+Oracle Home Directory
+Database Configuration options (if installing Oracle Database)
+Other installation parameters
+Configure the Database (If Applicable)
+
+Follow the prompts during installation to configure the Oracle database (SID, memory settings, etc.).
+Ensure that the database is created successfully.
+Post-Installation Configuration
+
+After installation, run the required configuration scripts for the Oracle Database:
+sudo /u01/app/oracle/product/19c/dbhome_1/root.sh
+
+This will configure the Oracle binaries, configure Oracle network files, and perform necessary post-installation tasks.
+Start the Oracle Services
+
+Once the installation is complete, start the Oracle listener and the database:
+
+lsnrctl start
+sqlplus / as sysdba
+startup;
+Verify Installation
+
+Check if Oracle is running properly by verifying the listener and database:
+lsnrctl status
+sqlplus / as sysdba
+You can also check the Oracle database version with:
+SELECT * FROM v$version;

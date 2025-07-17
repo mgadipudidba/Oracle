@@ -1,0 +1,116 @@
+/u02/app/oracle/product/12.2.0/dbhome_7/admin/CLSBSTG/xdb_wallet
+
+
+orapki wallet display -wallet .
+
+
+[oracle@pdcr3adm02vm01 xdb_wallet]$ mkdir backup_wallet
+[oracle@pdcr3adm02vm01 xdb_wallet]$ mv *wallet.* ./backup_wallet
+[oracle@pdcr3adm02vm01 xdb_wallet]$ ls -ltr
+
+orapki wallet create -wallet /u02/app/oracle/product/12.2.0/dbhome_7/admin/CLSBSTG/xdb_wallet -auto_login
+
+
+[oracle@pdcr3adm02vm01 xdb_wallet]$ orapki wallet create -wallet /u02/app/oracle/product/12.2.0/dbhome_4/admin/CMBRSPRD/xdb_wallet -auto_login
+Oracle PKI Tool : Version 12.2.0.1.0
+Copyright (c) 2004, 2016, Oracle and/or its affiliates. All rights reserved.
+
+Enter password:
+Enter password again:
+Operation is successfully completed.
+
+
+
+orapki wallet add -wallet /u02/app/oracle/product/12.2.0/dbhome_4/admin/CMBRSPRD/xdb_wallet -dn "CN=CMBRSPRD" -self_signed -validity 3650 -keysize 2048 -pwd Password#123 -sign_alg SHA256
+
+
+[oracle@pdcr3adm02vm01 xdb_wallet]$ orapki wallet add -wallet /u02/app/oracle/product/12.2.0/dbhome_7/admin/CLSBSTG/xdb_wallet -dn "CN=CLSBSTG" -self_signed -validity 3650 -keysize 2048 -pwd Password#123 -sign_alg SHA256
+Oracle PKI Tool : Version 12.2.0.1.0
+Copyright (c) 2004, 2016, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+
+chmod 777 ewallet.p12
+chmod 777 cwallet.sso
+
+
+crs_stop ora.pdcr3adm01vm01.LISTENER_PDCR3ADM01VM01.lsnr
+
+srvctl stop instance -d CLSBSTG -i CLSBSTG1
+srvctl stop instance -d CCOMPSTG -i CCOMPSTG1
+srvctl stop instance -d CRCSSTG -i CRCSSTG1
+srvctl stop instance -d CROBSTG -i CROBSTG1
+srvctl stop instance -d CROCSTG -i CROCSTG1
+
+srvctl start instance -d CLSBSTG -i CLSBSTG1
+srvctl start instance -d CCOMPSTG -i CCOMPSTG1
+srvctl start instance -d CRCSSTG -i CRCSSTG1
+srvctl start instance -d CROBSTG -i CROBSTG1
+srvctl start instance -d CROCSTG -i CROCSTG1
+
+----------after patches updation -----------------------------
+
+we have to take the backup from 
+/u02/app/oracle/product/12.2.0/dbhome_3/admin/CROBSTG/xdb_wallet
+/u02/app/oracle/product/12.2.0/dbhome_3/admin/CROBSTG/xdb_wallet/         cp ./*wallet.* ~/backup_wallet_CCOMPSTG/
+
+cp *wallet. * /home/oracle/backup
+[oracle@pdcr3adm02vm01 backup_wallet_ROC]$ cp ./* /u02/app/oracle/product/12.2.0/dbhome_4/admin/CROCSTG/xdb_wallet/
+[oracle@pdcr3adm02vm01 backup_wallet_ROC]$ cd /u02/app/oracle/product/12.2.0/dbhome_4/admin/CROCSTG/xdb_wallet
+
+
+[oracle@pdcr3adm01vm01 dbhome_3]$ cd admin/CROBSTG/xdb_wallet/
+[oracle@pdcr3adm01vm01 xdb_wallet]$ ls -ltr
+total 8
+-rw------- 1 oracle asmadmin 3851 May 10 11:03 ewallet.p12
+-rw------- 1 oracle asmadmin 3896 May 10 11:03 cwallet.sso
+
+
+[grid@pdcr2adm01vm01 ~]$ crs_stat|grep lsnr
+NAME=ora.ASMNET1LSNR_ASM.lsnr
+NAME=ora.LISTENER.lsnr
+NAME=ora.LISTENER_LEAF.lsnr
+NAME=ora.LISTENER_SCAN1.lsnr
+NAME=ora.pdcr3adm01vm01.LISTENER_PDCR3ADM01VM01.lsnr
+NAME=ora.pdcr3adm02vm01.LISTENER_PDCR3ADM02VM01.lsnr
+
+<<<<<<<< second node  >>>>>>
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ crs_stop ora.pdcr3adm02vm01.LISTENER_PDCR3ADM02VM01.lsnr
+Attempting to stop `ora.LISTENER.lsnr` on member `pdcr3adm02vm01`
+Stop of `ora.LISTENER.lsnr` on member `pdcr3adm02vm01` succeeded.
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl config
+CCOMPSTG
+CDEMO
+CLSBSTG
+CMBRSSTG
+CRCSSTG
+CROBSTG
+CROCSTG
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl status database -d CROBSTG
+Instance CROBSTG1 is running on node pdcr3adm01vm01
+Instance CROBSTG2 is running on node pdcr3adm02vm01
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ crs_CROBSTG -i CROBSTG2
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl start instance -d CROBSTG -i CROBSTG2
+
+<<<<<<<<< First node  >>>>>>>>
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ crs_stop ora.pdcr3adm01vm01.LISTENER_PDCR3ADM01VM01.lsnr
+Attempting to stop `ora.LISTENER.lsnr` on member `pdcr3adm01vm01`
+Stop of `ora.LISTENER.lsnr` on member `pdcr3adm01vm01` succeeded.
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl stop instance -d CROBSTG -i CROBSTG1
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl start instance -d CROBSTG -i CROBSTG1
+
+[oracle@pdcr3adm01vm01 xdb_wallet]$ pwd
+/u02/app/oracle/product/12.2.0/dbhome_3/admin/CROBSTG/xdb_wallet
+
+-----------------------------------------
+              Prodution
+-----------------------------------------
+[oracle@pdcr3adm01vm01 xdb_wallet]$ srvctl stop instance -d CROBPRD -i CROBPRD1 -force
+

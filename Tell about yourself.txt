@@ -1,0 +1,93 @@
+Hi, I'm Madhusudhana, and I have over 13 years of experience working as a Database Administrator. Throughout my career, I’ve gained extensive expertise across multiple database platforms, including SQL Server, Oracle, MySQL, and Db2. Experince in managing database environments, performance tuning , and ensuring high availability  and Implementing backup, disaster recovery, and replication strategies across different systems.
+
+
+Having 9 years experince working with SQL Server, where I’ve handled database design and installation to performance tuning, backup and recovery, and troubleshooting. In SQL Server include managing large-scale environments, automating administrative tasks, and implementing disaster recovery strategies. work experince in SQL Server clustering, replication, and AlwaysOn Availability Groups for business continuity."
+
+
+Relevant of Oracle & MySQL & postgreql experince  is 6 years in managing and optimizing Oracle databases in enterprise environments. I have worked with multiple versions of Oracle Database, including 12c, 19c, and 21c, and have a deep understanding of Oracle architecture, performance tuning, and troubleshooting. specializing in Oracle RAC, Data Guard,Goldengate for backup and recovery. I’m proficient in performance tuning using tools like AWR and ADDM, and I’ve worked with Oracle databases in both high-availability and multi-node environments. I’ve also contributed to migration projects, helping to move Oracle databases across different platforms while ensuring minimal downtime and seamless integration and have managed databases supporting critical applications in industries such as [mention industry, e.g., Telekom, finance, healthcare, e-commerce].
+
+
+Experince in installing and configuring Oracle Database environments, including Oracle RAC, Data Guard, golden gate and ASM, specifically on Linux platforms.
+
+Strong experience in optimizing database performance, analyzing SQL queries, and working with Oracle Enterprise Manager (OEM) and other diagnostic tools to identify bottlenecks and improve efficiency.
+
+Test recovery plans to ensure business continuity.
+
+worked in setting up RMAN-based backups, performing point-in-time recovery, and implementing disaster recovery strategies to ensure high availability and data integrity.
+
+implemented online and offline backup, recovery solutions and nightly export, Automated support by using oracle utilities EXPDP /IMPDP and Unix shell script
+Schedule recurring activities such as gathering database statistics, export, rman backup, and table space usage report using crontab
+Purge activity for large tables and restore in archive database shell script in Linux
+
+Troubleshoot the LOB segment
+ORA-01691: unable to extend lob segment
+
+Use ALTER TABLE ... MOVE (for tables with LOB columns)
+Shrink Tablespace (if using LOBs stored in a tablespace)
+reclaiming space after large deletions
+ensure you have proper backups of the database before performing any space reclamation operations like table moves or rebuilding.
+Automation for large table purge with certain retetion period set in linux script tun thr crontab
+
+Well-versed in Linux operating systems, including tuning OS parameters, managing file systems, and troubleshooting hardware or software-related issues. I’m comfortable with shell scripting and automating routine DBA tasks.
+
+Familar with database monitoring tools as :
+Nagios
+
+Supported Databases: MySQL, PostgreSQL, Oracle, SQL Server, and others (via plugins).
+Features: Open-source monitoring tool that supports various databases. It offers custom monitoring through plugins and allows DBAs to set up performance checks, receive alerts, and generate reports.
+Zabbix
+
+Supported Databases: MySQL, PostgreSQL, Oracle, SQL Server, and others.
+Features: Open-source monitoring solution that supports network and server monitoring, including databases. It offers visualization, custom metrics, and powerful alerting systems to detect issues in real-time.
+
+Solid background in managing and maintaining Oracle RAC, ensuring continuous database availability and load balancing.
+
+Familiar with managing database security, user roles, and privileges, as well as implementing encryption for data protection.
+
+I have experience with troubleshooting complex database issues, providing 24/7 support in production environments, and collaborating with developers to improve application performance. I am also committed to staying updated with the latest Oracle technologies and trends to continue improving my skills.
+
+
+
+Installed, configured, and maintained relational database servers and Cloud servers, ensuring high performance and reliability for critical applications.
+· Oversaw end-to-end lifecycle of relational database servers and Cloud servers, ensuring seamless installation, configuration, and maintenance for optimal performance.
+· Successfully executed migrations from on permisese to cloud services, enhancing system compatibility and functionality while minimizing downtime and data loss.
+· Played a key role in disaster recovery tests, reducing recovery time objectives (RTO) by 20% and ensuring system resilience during unforeseen events.
+· Implemented SQL Always-On availability groups, resolving issues promptly to minimize downtime and improve system availability by 25%, while overseeing database refresh activities and optimizing storage utilization
+· Applied service packs and security patches, ensuring 100% patching compliance and bolstering server security.
+· Enabled and troubleshoot maintenance jobs like Backup, Index Re-build, Re-organize, update stats, Integrity, and clean history jobs.
+· Good experience in Security at the Server level and database level.
+· Done the DB refresh activities from Prod to non-prod environments.
+· Fixing Orphan users through Stored Procedures.
+· Monitoring the growth of the Databases.
+· Maintained Fail-Over Clustering environment (Active\Passive Model)
+· Automated the environment by creating jobs for all regular maintenance activities by using OLA Hallengren Scripts.
+· Ensuring data consistency in the database through DBCC commands and DMV’s.
+· Perform regular SQL Server Health checks.
+· Worked with the development team and executed scripts on Prod, QA, Dev, and Test servers as requested.
+· Good experience in resolving blockings and Deadlock Issues by using SQL commands.
+· Fixed the TempDB, data, and log file full issues.
+· Coordinating with the Onsite Team in the Implementation and Maintenance of projects.
+· Worked on performance issues CPU, Memory, and I/O utilization high & slow running queries.
+· Worked with weekly-based jobs like Rebuild &Reorganize the indexes and Fragmentation.
+
+
+from  so yeah that's pretty much  about me.
+
+
+Steps to follows to migration:
+so primarily when we started like customer has different environments they have saml databases which were in non-production then weere database which weere larger in size .the main consideration that we have to take care while doing the database migration is to like what method we are going to use character set method that youre going to use how much time it is going to take how much  downtime we can afford . How quickly you can hand over the enivornment to the customer once database migration done. so we intillay started we tried the couple of methods like zero downtime migration . but few database there were  challenges related to the wallet  and other security stuff then we tried export import for smaller database for larger databases we use data guard so how we did was the customer environment is like non cdb 
+
+
+In Oracle, "MRP" stands for "Managed Recovery Process" and "RFS" stands for "Remote File Server"; both are background processes used in Oracle Data Guard, where MRP applies archived redo logs to the standby database, while RFS receives those archived redo logs from the primary database and writes them to the standby redo logs on the standby server. 
+Key points about MRP and RFS:
+RFS Function:
+The RFS process runs on the standby database and is responsible for receiving redo data (archived redo logs) transmitted from the primary database over the network and writing it to the standby redo logs.
+MRP Function:
+The MRP process reads the redo data from the standby redo logs received by RFS and applies it to the standby database, essentially keeping the standby database synchronized with the primary. 
+How they work together:
+Data Transfer:
+When changes occur on the primary database, redo logs are generated and archived. 
+RFS Role:
+The RFS process on the standby database receives these archived redo logs from the primary. 
+MRP Role:
+The MRP process then reads the received redo data from the standby redo logs and applies it to the standby database, effectively making the standby a copy of the primary. 

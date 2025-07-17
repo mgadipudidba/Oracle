@@ -1,0 +1,2 @@
+CRS_HOME=/u01/app/12.2.0.1/grid
+$CRS_HOME/bin/crs_stat | awk -F= '/NAME=/{n=$2}/TYPE=/{t=$2}/TARGET=/{g=$2}/STATE=/{s=$2; printf("%-75s%-18s%-15s%-30s\n", n,t,g,s)}'

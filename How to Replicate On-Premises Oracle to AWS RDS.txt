@@ -1,0 +1,676 @@
+How to Replicate On-Premises Oracle Database to AWS RDS Oracle using Golden Gate
+1# Master Document for Golden Gate Replication.
+
+GOLDEN GATE EC2-ORACLE TO RDS- ORACLE
+
+==========================================
+
+STEP -1 
+
+Linux Server Ready.
+
+groupadd dba
+groupadd oinstall
+useradd -m -g oinstall -G dba oracle
+sudo dd if=/dev/zero of=/root/swapfile bs=1024 count=2199000
+chmod 600 /root/swapfile 
+mkswap /root/swapfile 
+swapon /root/swapfile
+
+vi /etc/fstab
+free -m
+dnf install -y https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64/getPackage/oracle-database-preinstall-19c-1.0-1.el8.x86_64.rpm
+vi /etc/selinux/config
+SELINUX=permissive
+
+# setenforce Permissive
+yum install perl-libwww-perl
+su – oracle
+mkdir .ssh
+chmod 700 .ssh
+touch .ssh/authorized_keys
+chmod 600 .ssh/authorized_keys
+GET http://169.254.169.254/latest/meta-data/public-keys/0/openssh-key > .ssh/authorized_keys
+Re-login…
+
+su – oracle
+
+cd /files
+unzip oracle-database-ee-19c-1.0-1.x86_64.rpm.zip
+
+su – root
+cd /files
+yum -y localinstall oracle-database-ee-19c-1.0-1.x86_64.rpm
+
+su – oracle
+cd /opt/oracle/product/19c/dbhome_1/
+export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
+yum install xterm
+cd $ORACLE_HOME/bin
+
+./dbca
+
+Configure listener.ora & tnsnames.ora
+
+===================================
+
+INSTALL ORACLE FULL CLIENT :
+
+=================================
+
+unzip <>
+cd client
+./runInstaller
+INSTALL GG
+
+=============
+
+unzip
+
+./runInstaller
+export PATH=$PATH:/u01/ggs
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/u01/ggs/lib
+Change SourceDB to Archivelog
+
+alter database add supplemental log data;
+
+SOURCE DB GRANT
+
+=================
+
+Create user ogg_user and test1.
+
+for user test1
+
+===========
+
+SQL> create table t1 (col1 number, col2 varchar2(20));
+
+Table created.
+
+SQL> alter table t1 add primary key (col1);
+
+Table altered.
+
+@insert.sql
+
+USER OGG_USER
+
+================
+
+CREATE TABLESPACE OGG_TEST;
+
+CREATE USER ogg_user IDENTIFIED BY welcome123
+
+   DEFAULT TABLESPACE OGG_TEST TEMPORARY TABLESPACE TEMP; 
+
+GRANT CREATE SESSION, ALTER SESSION TO ogg_user;
+GRANT RESOURCE TO ogg_user;
+GRANT SELECT ANY DICTIONARY TO ogg_user;
+GRANT FLASHBACK ANY TABLE TO ogg_user;
+GRANT SELECT ANY TABLE TO ogg_user;
+GRANT SELECT ON SYS.V_$DATABASE TO ogg_user;
+GRANT ALTER ANY TABLE TO ogg_user; 
+
+alter system set enable_goldengate_replication=true;
+
+TARGET DB —RDS 
+
+=================
+
+NON-DEFAULT Parameter file
+
+Set the compatible parameter to 11.2.0.4 or later
+
+Set the ENABLE_GOLDENGATE_REPLICATION parameter to TRUE
+
+CREATE TABLESPACE GG_TBS;
+CREATE USER OGG_USER  IDENTIFIED BY “password” 
+   DEFAULT TABLESPACE GG_TBS 
+   TEMPORARY TABLESPACE temp;
+
+ALTER USER OGG_USER QUOTA UNLIMITED ON GG_TBS;
+GRANT
+
+======
+
+GRANT CREATE SESSION  TO OGG_USER;
+GRANT ALTER SESSION  TO OGG_USER;
+GRANT CREATE CLUSTER  TO OGG_USER;
+GRANT CREATE INDEXTYPE TO OGG_USE;
+GRANT CREATE OPERATOR TO OGG_USER;
+GRANT CREATE PROCEDURE  TO OGG_USER;
+GRANT CREATE SEQUENCE  TO OGG_USER;
+GRANT CREATE TABLE   TO OGG_USER;
+GRANT CREATE TRIGGER  TO OGG_USER;
+GRANT CREATE TYPE  TO OGG_USER;
+GRANT SELECT ANY DICTIONARY TO OGG_USER;
+GRANT CREATE ANY TABLE  TO OGG_USER;
+GRANT ALTER ANY TABLE  TO OGG_USER;
+GRANT LOCK ANY TABLE  TO OGG_USER;
+GRANT SELECT ANY TABLE  TO OGG_USER;
+GRANT INSERT ANY TABLE TO OGG_USER;
+GRANT UPDATE ANY TABLE  TO OGG_USER;
+GRANT DELETE ANY TABLE TO OGG_USER;
+
+alter system set enable_goldengate_replication=true;
+
+exec rdsadmin.rdsadmin_dbms_goldengate_auth.grant_admin_privilege(grantee=>’OGG’_USER,privilege_type=>’capture’,grant_select_privileges=>true,do_grants=>TRUE);
+
+PL/SQL procedure successfully completed.
+
+ADD TNS ALAIS
+
+==============
+
+OGGSOURCE=
+   (DESCRIPTION= 
+        (ENABLE=BROKEN)
+        (ADDRESS_LIST= 
+            (ADDRESS=(PROTOCOL=TCP)(HOST=3.83.239.171)(PORT=1521)))
+        (CONNECT_DATA=(SID=source))
+    )
+
+OGGTARGET=
+
+    (DESCRIPTION= 
+       (ENABLE=BROKEN)
+        (ADDRESS_LIST= 
+
+            (ADDRESS=(PROTOCOL=TCP)(HOST=database-1.cnx2avdvzhtc.us-east-1.rds.amazonaws.com)(PORT=1521)))
+
+        (CONNECT_DATA=(SID=target))
+    )
+=================================================================
+
+GGSCI
+
+=========
+
+export PATH=$PATH:/u01/ggs
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/u01/ggs/lib
+cd /u01/ggs
+
+./ggsci
+GGSCI> add schematrandata test1
+GGSCI> info schematrandata test1
+GGSCI> start mgr
+
+Extract :
+
+++++++++
+
+vi $GG_HOME/dirprm/ESRC.prm
+
+EXTRACT ESRC
+SETENV (ORACLE_SID=source)
+SETENV (NLSLANG=AL32UTF8)
+USERID OGG_USER@OGGSOURCE PASSWORD welcome123
+EXTTRAIL ./dirdat/st
+TRANLOGOPTIONS EXCLUDEUSER OGG_USER
+TRANLOGOPTIONS DBLOGREADER
+TRANLOGOPTIONS BUFSIZE 4096000
+TRANLOGOPTIONS DBLOGREADERBUFSIZE 4096000
+
+dblogin userid ogg_user@OGGSOURCE
+
+add checkpointtable ogg_user.CKPT1
+
+REGISTER EXTRACT ESRC, DATABASE
+ADD EXTRACT ESRC, TRANLOG, BEGIN NOW
+ADD EXTTRAIL ./dirdat/st, EXTRACT ESRC, megabytes 5
+
+start ESRC
+ info all
+view report ESRC
+stats extract ESRC01
+EXIT
+
+==========================
+
+PUMP
+vi dirprm/PSRC.prm
+EXTRACT PSRC
+RMTHOST ip-172-31-92-135.ec2.internal, MGRPORT 7809, TIMEOUT 30
+RMTTRAIL /u01/ggs/dirdat/ps
+PASSTHRU
+
+ DBLOGIN USERID OGG_USER
+
+Password: 
+
+Successfully logged into database.
+
+add extract PSRC, EXTTRAILSOURCE /u01/ggs/dirdat/st, begin NOW
+
+add rmttrail /u01/ggs/dirdat/ps,extract PSRC
+
+start PSRC
+
+Sending START request to MANAGER …
+
+EXTRACT PSRC starting
+
+GGSCI (ip-172-31-82-174.ec2.internal as OGG_USER@orcl) 7> info all
+
+REPLICAT:
+
+=============
+
+dblogin userid ogg_user@OGGTARGET
+
+edit param RAPPS
+
+REPLICAT RAPPS
+
+SETENV (ORACLE_SID=target)
+
+SETENV (NLSLANG=AL32UTF8)
+
+ASSUMETARGETDEFS
+
+DISCARDFILE ./dirrpt/rapps.dsc, APPEND
+
+DBOPTIONS ENABLE_INSTANTIATION_FILTERING
+
+USERID ogg_user@OGGTARGET, PASSWORD welcome123
+
+REPORTCOUNT EVERY 30 MINUTES, RATE
+
+DDL INCLUDE ALL
+
+DDLOPTIONS REPORT
+
+MAP TEST1.T1, TARGET  TEST2.T1;
+
+add replicat RAPPS EXTTRAIL /u01/ggs/dirdat/ps CHECKPOINTTABLE ogg_user.chkt
+
+SOUREC DB :
+
+===============
+
+select directory_path
+
+from dba_directories
+
+where directory_name = ‘DATA_PUMP_DIR’
+
+TAKE THE SCN number before EXPDP.
+
+SQL>  select current_scn from v$database ;
+
+./expdp directory=’DATA_PUMP_DIR’ schemas=test1 parallel=4 dumpfile=<NAME.DMP> flashback_scn=< >
+
+ggsci -TARGET DB –
+
+———
+
+START REPLICAT rapps, AFTERCSN 2081532
+
+info all
+
+CHECK $GG_HOME/dirdat
+
+CHECK TRAILS.
+
+====================
+
+Source Insert :
+
+Target —> Check.
+
+==================================
+
+LISTENER_ORCL =
+
+  (ADDRESS = (PROTOCOL = TCP)(HOST = <>)(PORT = 1521))
+
+ORCL =
+
+   ( DESCRIPTION =
+
+     (ADDRESS = ( PROTOCOL = TCP)(HOST = <>)(PORT = 1521 ))
+
+   (CONNECT_DATE =
+
+     (SERVER = DEDICATED)
+
+     (SERVICE_NAME =ORCL)
+
+  )
+
+)
+
+[root@quickbox-0322 admin]# cat tnsnames.ora
+
+SOURCE=
+
+        (DESCRIPTION=
+
+                (ADDRESS=(PROTOCOL=tcp)(HOST=<>)(PORT=1521))
+
+            (CONNECT_DATA=
+
+                (SERVICE_NAME=source)
+
+                (INSTANCE_NAME=source)
+
+            )
+
+        )
+
+TARGET=
+
+        (DESCRIPTION=
+
+                (ADDRESS=(PROTOCOL=tcp)(HOST=<>)(PORT=1521))
+
+            (CONNECT_DATA=
+
+                (SERVICE_NAME=TARGET)
+
+                (INSTANCE_NAME=TARGET)
+
+            )
+
+        )
+
+alter system set enable_goldengate_replication=true;
+GRANT CREATE SESSION, ALTER SESSION TO ogg_user;
+
+GRANT RESOURCE TO ogg_user;
+
+GRANT SELECT ANY DICTIONARY TO ogg_user;
+
+GRANT FLASHBACK ANY TABLE TO ogg_user;
+
+GRANT SELECT ANY TABLE TO ogg_user;
+
+GRANT EXECUTE ON DBMS_FLASHBACK TO ogg_user;
+
+GRANT SELECT ON SYS.V_$DATABASE TO ogg_user;
+
+GRANT ALTER ANY TABLE TO ogg_user; 
+
+SQL> create table ggtest (col1 number, col2 varchar2(20));
+
+Table created.
+
+SQL> alter table ggtest add primary key (col1);
+
+Table altered.
+
+insert into ggtest values (1,’hello world!’);
+
+insert into ggtest values (2,’hello world!’);
+
+insert into ggtest values (3,’hello world!’);
+
+insert into ggtest values (4,’hello world!’);
+
+insert into ggtest values (5,’hello world!’);
+
+insert into ggtest values (6,’hello world!’);
+
+insert into ggtest values (7,’hello world!’);
+
+insert into ggtest values (8,’hello world!’);
+
+insert into ggtest values (9,’hello world!’);
+
+insert into ggtest values (10,’hello world!’);
+
+insert into t1 values (11,’hello world!’);
+
+insert into ggtest values (12,’hello world!’);
+
+insert into ggtest values (13,’hello world!’);
+
+insert into ggtest values (14,’hello world!’);
+
+insert into ggtest values (15,’hello world!’);
+
+insert into ggtest values (16,’hello world!’);
+
+insert into ggtest values (17,’hello world!’);
+
+insert into ggtest values (18,’hello world!’);
+
+insert into ggtest values (19,’hello world!’);
+
+insert into ggtest values (20,’hello world!’);
+
+insert into ggtest values (21,’hello world!’);
+
+insert into ggtest values (22,’hello world!’);
+
+insert into ggtest values (23,’hello world!’);
+
+insert into ggtest values (24,’hello world!’);
+
+insert into ggtest values (25,’hello world!’);
+
+Document Reference 2 #
+
+On-Premises/EC2 Oracle to RDS Oracle ( EXPDP / IMPDP )
+
+export SCRIPT :
+
+SQL DECLARE hdnl NUMBER;
+BEGIN hdnl := DBMS_DATAPUMP.OPEN( operation => ‘EXPORT’, job_mode => ‘SCHEMA’, job_name=>null);
+DBMS_DATAPUMP.ADD_FILE(handle => hdnl, filename => ‘TEST1_01.DMP’, directory => ‘DATA_PUMP_DIR’, filetype => dbms_datapump.ku$_file_type_dump_file);
+DBMS_DATAPUMP.ADD_FILE( handle => hdnl, filename => ‘hr_exp.log’, directory => ‘DATA_PUMP_DIR’, filetype => dbms_datapump.ku$_file_type_log_file);
+DBMS_DATAPUMP.METADATA_FILTER(hdnl,’SCHEMA_EXPR’,’IN (”TEST1”)’);
+DBMS_DATAPUMP.START_JOB(hdnl);
+END;
+/
+
+exportlocation : /u01/app/oracle/admin/orcl/dpdump/
+
+DUMP File move from S3 to RDS :
+SELECT rdsadmin.rdsadmin_s3_tasks.download_from_s3(
+p_bucket_name => ‘<>’,
+p_directory_name => ‘DATA_PUMP_DIR’)
+AS TASK_ID FROM DUAL
+
+1588045271800-99
+
+SELECT text FROM table(rdsadmin.rds_file_util.read_text_file(‘BDUMP’,’dbtask-1588053332928-28.log’));
+
+select * from table(RDSADMIN.RDS_FILE_UTIL.LISTDIR(‘DATA_PUMP_DIR’)) order by mtime;
+
+select * from table(RDSADMIN.RDS_FILE_UTIL.LISTDIR(‘DATA_PUMP_DIR’)) order by mtime;
+
+select * from table(RDSADMIN.RDS_FILE_UTIL.LISTDIR(‘DATA_PUMP_DIR’)) order by mtime;
+
+select ‘exec utl_file.fremove(”DATA_PUMP_DIR”,”’||filename||”’);’ from table(RDSADMIN.RDS_FILE_UTIL.LISTDIR(‘DATA_PUMP_DIR’)) order by mtime;
+exec utl_file.fremove(‘DATA_PUMP_DIR’,’datapump/’);
+
+exec utl_file.fremove(‘DATA_PUMP_DIR’,’HR01.DMP’);
+
+====================================================================================
+
+begin
+rdsadmin.rdsadmin_password_verify.create_verify_function(
+p_verify_function_name => ‘CUSTOM_PASSWORD_FUNC’,
+p_min_length => 7,
+p_min_uppercase => 2,
+p_min_digits => 1,
+p_min_special => 1,
+p_disallow_at_sign => true);
+end;
+/
+
+create profile HR_USERS limit
+LOGICAL_READS_PER_SESSION DEFAULT
+PRIVATE_SGA DEFAULT
+CPU_PER_SESSION DEFAULT
+PASSWORD_REUSE_TIME DEFAULT
+COMPOSITE_LIMIT DEFAULT
+PASSWORD_VERIFY_FUNCTION CUSTOM_PASSWORD_FUNC
+PASSWORD_GRACE_TIME DEFAULT
+PASSWORD_LIFE_TIME 180
+SESSIONS_PER_USER DEFAULT
+CONNECT_TIME DEFAULT
+CPU_PER_CALL DEFAULT
+FAILED_LOGIN_ATTEMPTS 6
+PASSWORD_LOCK_TIME DEFAULT
+PASSWORD_REUSE_MAX 12
+LOGICAL_READS_PER_CALL DEFAULT
+IDLE_TIME DEFAULT;
+
+CREATE SMALLFILE TABLESPACE “EXAMPLE” DATAFILE SIZE 100M AUTOEXTEND ON NEXT 100M LOGGING EXTENT MANAGEMENT LOCAL AUTOALLOCATE SEGMENT SPACE MANAGEMENT AUTO;
+CREATE USER TESTNEW IDENTIFIED BY “TESt1234#” DEFAULT TABLESPACE EXAMPLE TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON users PROFILE HR_USERS;
+
+GRANT CREATE SESSION TO TEST2;
+GRANT CREATE JOB TO TEST2;
+GRANT CREATE PROCEDURE TO TEST2;
+GRANT CREATE SEQUENCE TO TEST2;
+GRANT CREATE TABLE TO TEST2;
+GRANT RESOURCE,CONNECT TO TEST2;
+
+grant resource,connect to TEST2;
+
+================================
+import script :
+
+DECLARE
+ind NUMBER; — Loop index
+h1 NUMBER; — Data Pump job handler
+percent_done NUMBER; — Percentage of job complete
+job_state VARCHAR2(30); — To keep track of job state
+le ku$_LogEntry; — For WIP and error messages
+js ku$_JobStatus; — The job status from get_status
+jd ku$_JobDesc; — The job description from get_status
+sts ku$_Status; — The status object returned by get_status
+BEGIN
+h1 := DBMS_DATAPUMP.OPEN( operation => ‘IMPORT’, job_mode => ‘SCHEMA’, job_name=>null);
+DBMS_DATAPUMP.ADD_FILE(h1,’HR01.DMP’,’DATA_PUMP_DIR’);
+DBMS_DATAPUMP.ADD_FILE(handle => h1, directory => ‘DATA_PUMP_DIR’, filename => ‘import_test2.LOG’, filetype => DBMS_DATAPUMP.KU$_FILE_TYPE_LOG_FILE);
+DBMS_DATAPUMP.METADATA_REMAP(h1,’REMAP_SCHEMA’,’TEST1′,’TEST2′);
+DBMS_DATAPUMP.SET_PARAMETER(h1,’TABLE_EXISTS_ACTION’,’SKIP’);
+DBMS_DATAPUMP.metadata_transform ( handle => h1, name => ‘DISABLE_ARCHIVE_LOGGING’, value => 1);
+DBMS_DATAPUMP.START_JOB(h1);
+
+percent_done := 0;
+job_state := ‘UNDEFINED’;
+while (job_state != ‘COMPLETED’) and (job_state != ‘STOPPED’) loop
+dbms_datapump.get_status(h1,
+dbms_datapump.ku$_status_job_error +
+dbms_datapump.ku$_status_job_status +
+dbms_datapump.ku$_status_wip,-1,job_state,sts);
+js := sts.job_status;
+
+— If the percentage done changed, display the new value.
+
+1
+2
+3
+4
+5
+6
+  if js.percent_done != percent_done
+then
+  dbms_output.put_line('*** Job percent done = ' ||
+                       to_char(js.percent_done));
+  percent_done := js.percent_done;
+end if;
+— If any work-in-progress (WIP) or Error messages were received for the job,
+— display them.
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+    if (bitand(sts.mask,dbms_datapump.ku$_status_wip) != 0)
+then
+  le := sts.wip;
+else
+  if (bitand(sts.mask,dbms_datapump.ku$_status_job_error) != 0)
+  then
+    le := sts.error;
+  else
+    le := null;
+  end if;
+end if;
+if le is not null
+then
+  ind := le.FIRST;
+  while ind is not null loop
+    dbms_output.put_line(le(ind).LogText);
+    ind := le.NEXT(ind);
+  end loop;
+end if;
+end loop;
+
+— Indicate that the job finished and gracefully detach from it.
+
+dbms_output.put_line(‘Job has completed’);
+dbms_output.put_line(‘Final job state = ‘ || job_state);
+dbms_datapump.detach(h1);
+END;
+/
+
+set lines 10000 pages 0
+
+Check Import Logs :
+SELECT text FROM table(rdsadmin.rds_file_util.read_text_file(‘DATA_PUMP_DIR’,’import_test2.LOG’));
+
+Document Reference 3 #
+
+How to Resolve OGG-00446 Checkpoint Table Does Not Exist (Doc ID 1578987.1)	To Bottom	
+
+In this Document
+SymptomsChangesCauseSolutionReferences
+APPLIES TO:Oracle GoldenGate – Version 11.1.1.1.4 and later
+Information in this document applies to any platform.
+******** Checked for Relevance 11-Oct-2016 ********
+SYMPTOMS Replicat abends with ERROR   OGG-00446  Checkpoint table “table name” does not exist.  Please create the table or recreate the “replicat” group using the correct table.
+
+CHANGES CAUSE
+The mgr process was started from a different Oracle instance then where the replicat was connected
+Checkpoint table did not exist in that database
+
+SOLUTION
+
+Verify the DB instance where the checkpoint table should exist
+To create a new checkpoint table:ggsci> dblogin userid “user id”  PASSWORD “password“
+
+ggsci> add checkpointtable “checkpoint table name“
+ggsci> info “replicat”  (Make a note of the trail file sequence number and RBA )
+ggsci> delete “replicat“!
+ggsci> add rep “replicat” , exttrail  “trail file”  extseqno ###, extrba ####, checkpointtable “checkpoint table name”  ( Use the extseqno and extrba from the INFO command)
+
+ Example:
+If info replicat shows below information:
+GGSCI> info repts2, showch REPLICAT REPTS2
+
+Initialized 2012-11-19 08:18 Status STOPPEDDescription Process Trail file from VLDBPD2J Checkpoint Lag 00:00:00 (updated 01:08:32 ago)
+Log Read Checkpoint File
+./dirdat/t2004888
+
+First Record RBA 120750367 Than 
+ggsci> add checkpointtable VLOGG.GGS_CHECKPOINTggsci> delete rep repts2 !
+ggsci> add rep repts2, exttrail ./dirdat/t2 extseqno 004888, extrba 120750367, checkpointtable VLOGG.GGS_CHECKPOINT
+
+ggsci> start rep repts2 
+ggsci> start rep “replicat” 
+To use checkpoint table on replicat DB instance:Set ORACLE_SID and ORACLE_HOME environment variablesRecycle manager process
+
+ggsci>stop mgrggsci>
+start mgrggsci> start rep “replicat”

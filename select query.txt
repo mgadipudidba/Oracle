@@ -1,0 +1,40 @@
+
+how to fetch the 
+
+
+slno   name
+
+       
+001    GPO
+001    GPO
+
+result : eliminate HSM records
+
+Select  x.rowid_object from c_bo_prty x,
+(select count(), rowid_object from c_bo_prty_xref where rowid_system <>'HSM' group by rowid_object having count()>2) G
+where x.rowid_object =g.rowid_object and g.rowid_object not in (select rowid_object from c_bo_prty_xref where rowid_system='HSM');
+
+
+insert into c_bo_prty x (x.rowid_object)
+(select count(), rowid_object from c_bo_prty_xref where rowid_system <>'HSM' group by rowid_object having count()>2) G
+where x.rowid_object =g.rowid_object and g.rowid_object not in (select rowid_object from c_bo_prty_xref where rowid_system='HSM');
+
+
+
+slno   name
+
+001    HSM
+001    HSM
+
+
+select   PKEY_SRC_OBJ,ROWID_XREF,ROWID_OBJECT,ORIG_ROWID_OBJECT from C_L_PRTY_CROSS_REF,  
+(Select x.PKEY_SRC_OBJECT,x.rowid_xref, x.ROWID_OBJECT,x. ORIG_ROWID_OBJECT from c_bo_prty_xref x,
+(select count(rowid_system),rowid_object
+from c_bo_prty_xref where rowid_system='HSM'
+group by rowid_object,rowid_system having count(rowid_system)>1) g where x.rowid_object=g.rowid_object);
+
+insert  into C_L_PRTY_CROSS_REF (PKEY_SRC_OBJ,ROWID_XREF,ROWID_OBJECT,ORIG_ROWID_OBJECT) 
+(Select x.PKEY_SRC_OBJECT,x.rowid_xref, x.ROWID_OBJECT,x. ORIG_ROWID_OBJECT from c_bo_prty_xref x,
+(select count(rowid_system),rowid_object
+from c_bo_prty_xref where rowid_system='HSM'
+group by rowid_object,rowid_system having count(rowid_system)>1) g where x.rowid_object=g.rowid_object);

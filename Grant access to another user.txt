@@ -1,0 +1,19 @@
+begin
+for tab1 in (select table_name from dba_tables where owner='SSMUAT')
+LOOP
+execute immediate 'grant select on ssmuat.'||tab1.table_name||' to ROSSMSTG';
+end loop;
+end;
+/
+
+
+begin
+for tab1 in (select table_name from all_source where owner='SSMUAT')
+LOOP
+execute immediate 'grant debug on ssmuat.'||tab1.table_name||' to ROSSMSTG';
+end loop;
+end;
+/
+
+grant select on dba_source to ROSSMSTG;
+select username,account_status,default_tablespace from dba_user;

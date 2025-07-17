@@ -1,0 +1,88 @@
+#!/bin/bash
+
+set -e
+echo "=============================================================================="
+echo "=============================================================================="
+
+#Export Parameter
+export ORACLE_HOME=/opt/app/oracle/product/19.0.0/db_1
+export ORACLE_SID=MIBS
+export PATH=/opt/app/oracle/product/19.0.0/db_1/bin:/opt/app/oracle/product/19.0.0/db_1/OPatch:/usr/sbin:/usr/local/bin:/home/oracle/.local/bin:/home/oracle/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+export LD_LIBRARY_PATH=/opt/app/oracle/product/19.0.0/db_1/lib:/lib:/usr/lib
+
+#Output directory
+OUTPUT_DIR="/DumpExport"
+
+export TIMESTAMP=`date +%d%b%Y`
+echo $TIMESTAMP
+echo "======================="
+echo "Auto-Purge WEBBDS Database"
+echo "========================"
+echo $ORACLE_HOME
+
+#Take Backup for Table EJF and UserActivity
+#echo "Take Backup for Table EJF"
+$ORACLE_HOME/bin/expdp \'/ as sysdba\' tables=WEBBDS.EJF directory=DUMPDIR dumpfile=EXPDP_B4PURGE_EJF_${TIMESTAMP}.dmp logfile=EXPDP_B4PURGE_EJF_${TIMESTAMP}.log COMPRESSION=ALL
+#echo "Take Backup for Table UserActivity"
+$ORACLE_HOME/bin/expdp \'/ as sysdba\' tables=WEBBDS.USERACTIVITY directory=DUMPDIR dumpfile=EXPDP_B4PURGE_USERACTIVITY_${TIMESTAMP}.dmp logfile=EXPDP_B4PURGE_EJF_${TIMESTAMP}.log COMPRESSION=ALL
+ls -lha /DumpExport/export/EXPDP_B4PURGE_EJF_${TIMESTAMP}.dmp
+ls -lha /DumpExport/export/EXPDP_B4PURGE_USERACTIVITY_${TIMESTAMP}.dmp
+echo "Backup has been successfully completed"
+
+echo "------------------------------------------"
+#Start purge data for EJF
+echo "Start Data Purging for EJF at:- $(date)"
+# SQL commands
+SQL_COMMANDS=(
+'DELETE FROM WEBBDS.EJF WHERE REQTIMESTAMP < (SYSDATE - 15);'
+)
+# Loop through each SQL command and execute it, saving output to a file
+for ((i=0; i<${#SQL_COMMANDS[@]}; i++))
+do
+  SQL_COMMAND="${SQL_COMMANDS[$i]}"
+  OUTPUT_FILE="$OUTPUT_DIR/purgeEJF_$i.log"
+
+  echo "Executing: $SQL_COMMAND"
+  echo "Output will be saved to: $OUTPUT_FILE"
+
+  # Execute SQL command and save output to file
+  sqlplus / as sysdba <<EOF > "$OUTPUT_FILE"
+  $SQL_COMMAND
+  exit;
+EOF
+done
+echo "Data Purging for EJF have been completed at:- $(date)"
+cat $OUTPUT_FILE
+
+echo "------------------------------------------"
+
+
+#Start purge data for USERACTIVITY
+echo "Start Data Purging for USERACTIVITY $(date)"
+# SQL commands
+SQL_COMMANDS=(
+'delete FROM WEBBDS.USERACTIVITY WHERE "SYSTIMESTAMP" < (SYSDATE - 15);'
+)
+
+# Loop through each SQL command and execute it, saving output to a file
+for ((i=0; i<${#SQL_COMMANDS[@]}; i++))
+do
+  SQL_COMMAND="${SQL_COMMANDS[$i]}"
+  OUTPUT_FILE="$OUTPUT_DIR/purgeUSERACTIVITY_$i.log"
+
+  echo "Executing: $SQL_COMMAND"
+  echo "Output will be saved to: $OUTPUT_FILE"
+
+  # Execute SQL command and save output to file
+  sqlplus / as sysdba <<EOF > "$OUTPUT_FILE"
+  $SQL_COMMAND
+  exit;
+EOF
+done
+echo "Data Purging for UserActivity have been completed at:- $(date)"
+cat $OUTPUT_FILE
+echo "------------------------------------------"
+
+echo "=============================================================================="
+echo "=============================================================================="
+

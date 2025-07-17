@@ -1,0 +1,38 @@
+Below is an overview of the upgrade process using DBUA.
+
+1 | Backup Your Database
+
+Before the upgrade starts, create a database backup, including archive logs, and ensure that you have enough downtime arranged with the Application team to revert to this backup if the upgrade fails or if you encounter any issues. The downtime should have already been estimated based on the upgrade of your Test/Dev instances.
+
+2 | Empty Recycle Bin & Gather Stats
+
+Before the upgrade process, empty the recycle bin and gather stats. One of the recommendations is to export the stats as well.
+
+Ensure you have enough free space in db_recovery_file_dest and make changes to db_recovery_file_dest_size if needed.
+
+3 | Run Oracle’s Database Pre-Upgrade Utility
+
+Run the pre-upgrade script using the below guide from Oracle support:
+
+How to Download and Run Oracle's Database Pre-Upgrade Utility (Doc ID 884522.1)
+
+The script output will provide you with two additional scripts:
+
+preupgrade_fixups.sql (Must be run before the upgrade)
+postupgrade_fixups.sql (Must be run after the upgrade)
+4 | Install the Oracle 19c Database Software
+
+Install the Oracle 19c Database software (You can do this before Step 1 since you must install it in a different Oracle Home location from your Oracle 12c Home.)
+
+5 | Run the DBUA Utility
+
+Run the DBUA utility to upgrade the database. The utility provides options for gathering stats before the upgrade, taking a database backup, creating a restore point, restoring the database to rollback, and creating custom scripts. 
+
+6 | Run Post-Upgrade Script & Restart Database
+
+After the upgrade is complete, run the postupgrade_fixups.sql and restart the database.
+
+After completing the above steps, here are some post-upgrade steps:
+
+Ensure the application connects to the database (Move your SQLNet.ora, Listener.ora). The listener can be reconfigured during the DBUA process itself.
+Initiate a full backup of the database along with archive logs. 

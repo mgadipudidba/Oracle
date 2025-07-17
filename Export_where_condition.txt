@@ -1,0 +1,6 @@
+userid='/ as sysdba'
+DIRECTORY = DUMPDIR
+DUMPFILE  = expdp%U.dmp
+LOGFILE   = expdp_query.log
+tables = scdoc.docview 
+query = "where txday='20231001' and doctyp='51' and substr(actno,1,2) in ('22','62','33','63','77')"

@@ -1,0 +1,5 @@
+/var/opt/oracle/exapatch/exadbcpatchmulti -apply_async 28714316 -instance1=pdcr2adm01vm01:/u02/app/oracle/product/12.2.0/dbhome_4 -instance2=pdcr2adm02vm01:/u02/app/oracle/product/12.2.0/dbhome_4 -run_datasql=1
+
+
+/var/opt/oracle/exapatch/exadbcpatchmulti -precheck_async 28714316 -instance1=pdcr2adm01vm01:/u02/app/oracle/product/12.2.0/dbhome_4 -instance2=pdcr2adm02vm01:/u02/app/oracle/product/12.2.0/dbhome_4
+

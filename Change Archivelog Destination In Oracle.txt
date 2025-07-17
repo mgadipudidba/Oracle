@@ -1,0 +1,98 @@
+How to Change Archivelog Destination In Oracle
+
+Step:-1 Check archivelog location before change
+
+[oracle@dev19c ~]$ export ORACLE_SID=dbwr
+[oracle@dev19c ~]$ sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 – Production on Sun Nov 24 19:29:20 2019
+Version 19.4.1.0.0
+Copyright (c) 1982, 2019, Oracle. All rights reserved.
+Connected to an idle instance.
+
+SQL> startup
+ORACLE instance started.
+Total System Global Area 1157627856 bytes
+Fixed Size 9134032 bytes
+Variable Size 536870912 bytes
+Database Buffers 603979776 bytes
+Redo Buffers 7643136 bytes
+Database mounted.
+Database opened.
+
+Check Current Archivelog Location:
+
+SQL> archive log list
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/product/19.3.0/db_1/dbs/arch
+Oldest online log sequence 29
+Next log sequence to archive 31
+Current log sequence 31
+
+Step:-2 Change archivelog location 
+
+SQL> show parameter db_recovery_file_dest
+NAME TYPE VALUE
+———————————— ———– ——————————
+db_recovery_file_dest string
+db_recovery_file_dest_size big integer 0
+
+Note:- 1st set the FRA value before  changing
+
+SQL> alter system set db_recovery_file_dest_size=10g scope=both;
+System altered.
+
+Before Changing the location check FRA directory
+
+mkdir 
+chown oracle:oinstall <path>
+
+[oracle@dev19c ~]$ cd $ORACLE_BASE
+[oracle@dev19c oracle]$ ls
+admin audit cfgtoollogs checkpoints diag fast_recovery_area oradata product
+[oracle@dev19c oracle]$ cd fast_recovery_area/
+[oracle@dev19c fast_recovery_area]$ ls
+CHENNAI INDIA ORCL
+[oracle@dev19c fast_recovery_area]$ pwd
+/u01/app/oracle/fast_recovery_area
+[oracle@dev19c fast_recovery_area]$ sqlplus / as sysdba
+SQL*Plus: Release 19.0.0.0.0 – Production on Sun Nov 24 19:38:27 2019
+Version 19.4.1.0.0
+Copyright (c) 1982, 2019, Oracle. All rights reserved.
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 – Production
+Version 19.4.1.0.0
+
+SQL> alter system set db_recovery_file_dest=’/u01/app/oracle/fast_recovery_area’ scope=both;
+System altered.
+
+Step:-3 Check the status of archivelog location 
+
+SQL> archive log list
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination USE_DB_RECOVERY_FILE_DEST
+Oldest online log sequence 29
+Next log sequence to archive 31
+Current log sequence 31
+
+Switch the redologfile and archivelog gentrated in the FRA location
+
+SQL> alter system switch logfile;
+System altered.
+
+SQL> exit
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 – Production
+Version 19.4.1.0.0
+
+[oracle@dev19c fast_recovery_area]$ ls -lrt
+total 16
+drwxr-x—. 4 oracle oinstall 4096 Jun 12 01:11 ORCL
+drwxr-x—. 5 oracle oinstall 4096 Oct 4 10:58 INDIA
+drwxr-x—. 6 oracle oinstall 4096 Oct 20 15:31 CHENNAI
+drwxr-x—. 3 oracle oinstall 4096 Nov 24 19:38 DBWR
+
+[oracle@dev19c fast_recovery_area]$ cd DBWR/archivelog/2019_11_24/
+[oracle@dev19c 2019_11_24]$ ls -lrt
+total 17660
+-rw-r—–. 1 oracle oinstall 18080768 Nov 24 19:38 o1_mf_1_31_gxo3qp6f_.arc
